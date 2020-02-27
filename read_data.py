@@ -52,14 +52,4 @@ def read_data(chn_id):
     #print ("len of rays of this channel: ", len(rays))
 
 
-    pwr_normalized(rays)
     return rays
-
-def pwr_normalized(rays):
-    #rays = read_data(chn_id)
-    pwr = np.array([ray.received_power for ray in rays ])
-    magnitude = np.sqrt(np.sum(pwr ** 2))
-    #pwr_min = pwr[0]
-    for ray in rays:
-        ray.received_power =  ray.received_power / magnitude
-
