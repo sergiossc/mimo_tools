@@ -25,7 +25,7 @@ def read_data(chn_id):
     Existem outras tabelas com outras informacoes dos resultados dos ensaios. Pode-se usar o DB Browser for SQLite pra visualizar o banco de dados completo.
     """
 
-    conn = sqlite3.connect("/home/snow/github/land/lib/mimo_tools/data/urban_land.urban_land_x3d.sqlite")
+    conn = sqlite3.connect("urban_land.urban_land_x3d.sqlite")
     
     sql = "SELECT P.path_id, channel_id, departure_phi, departure_theta, arrival_phi, arrival_theta, received_power FROM [path] AS P JOIN path_utd ON P.path_id = path_utd.path_id"
     
