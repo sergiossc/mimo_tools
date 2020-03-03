@@ -25,9 +25,9 @@ def read_data(chn_id):
     Existem outras tabelas com outras informacoes dos resultados dos ensaios. Pode-se usar o DB Browser for SQLite pra visualizar o banco de dados completo.
     """
 
-    conn = sqlite3.connect("urban_land.urban_land_x3d.sqlite")
+    conn = sqlite3.connect("/home/snow/github/land/lib/mimo_tools/data/urban_land.urban_land_x3d.sqlite")
     
-    sql = "SELECT P.path_id, channel_id, departure_phi, departure_theta, arrival_phi, arrival_theta, received_power FROM [path] AS P JOIN path_utd ON P.path_id = path_utd.path_id"
+    sql = "SELECT P.path_id, channel_id, departure_phi, departure_theta, arrival_phi, arrival_theta, received_power FROM [path] AS P JOIN path_utd ON P.path_id = path_utd.path_id WHERE channel_id="+str(chn_id)
     
     df = pd.read_sql_query(sql, conn)
     conn.close()
@@ -46,10 +46,29 @@ def read_data(chn_id):
         arrival_phi = data_dict['arrival_phi'][n]
         arrival_theta = data_dict['arrival_theta'][n] 
         received_power = data_dict['received_power'][n] 
-        if chn_id == channel_id:
-            r = ray(path_id, channel_id, departure_phi, departure_theta, arrival_phi, arrival_theta, received_power)
-            rays.append(r) 
+        #if chn_id == channel_id:
+        r = ray(path_id, channel_id, departure_phi, departure_theta, arrival_phi, arrival_theta, received_power)
+        rays.append(r) 
     #print ("len of rays of this channel: ", len(rays))
 
+    #rays = [ray for ray in rays if (ray.arrival_phi >= -np.pi/2 ) and (ray.arrival_phi <= np.pi/2)]
+    #rays = [ray for ray in rays if (ray.arrival_theta < np.pi/2 ) and (ray.arrival_theta > -np.pi/2)]
+    #rays = [ray for ray in rays if (ray.departure_theta < np.pi/2 ) and (ray.departure_theta > -np.pi/2)]
+    #rays = [ray for ray in rays if (ray.departure_phi >= 0 ) and (ray.departure_phi <= np.pi/2)]
+    #rays = [ray for ray in rays if (ray.departure_phi >= -np.pi/2 ) and (ray.departure_phi <= np.pi/2)]
+    #rays = [ray for ray in rays if (ray.departure_theta >= -np.pi/2 ) and (ray.departure_theta <= np.pi/2)]
+ 
+    #sum_pwer = np.sum([ray.received_power for ray in rays])
+    #print ("------------------>>>>> ", sum_pwer)
+    rays = pwr_normalize(rays)
+    #rays = [rays[ np.random.randint(1,len(rays))]]
+    return rays
 
+def pwr_normalize(rays):
+    #rays = read_data(chn_id)
+    pwr = np.array([ray.received_power for ray in rays ])
+    magnitude = np.sqrt(np.sum(pwr ** 2))
+    #pwr_min = pwr[0]
+    for ray in rays:
+        ray.received_power =  ray.received_power / magnitude
     return rays

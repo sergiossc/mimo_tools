@@ -8,39 +8,65 @@ def scatteringchnmtx(rays, tx_array, rx_array):
     num_rx = rx_array.size # quantidade de elementos de antena no receptor
 
     h = np.zeros(num_tx * num_rx).reshape(num_rx, num_tx) # define a matriz de canal com tamanho num_tr por num_rx.
+    factor = (1/np.sqrt(num_rx * num_tx))
+
+    if (tx_array.formfactory=="UPA" and rx_array.formfactory=="UPA"):
+        print("********************UPA")
+        
+        for n in range(len(rays)):
+            departure_omega_x = 2 * np.pi * tx_array.element_spacing * np.sin(rays[n].departure_theta) * np.cos(rays[n].departure_phi)
+            departure_omega_y = 2 * np.pi * tx_array.element_spacing * np.sin(rays[n].departure_theta) * np.sin(rays[n].departure_phi)
     
-    for n in range(len(rays)):
-        departure_omega_x = 2 * np.pi * tx_array.element_spacing * np.sin(rays[n].departure_theta) * np.cos(rays[n].departure_phi)
-        departure_omega_y = 2 * np.pi * tx_array.element_spacing * np.sin(rays[n].departure_theta) * np.sin(rays[n].departure_phi)
+            arrival_omega_x = 2 * np.pi * rx_array.element_spacing * np.sin(rays[n].arrival_theta) * np.cos(rays[n].arrival_phi)
+            arrival_omega_y = 2 * np.pi * rx_array.element_spacing * np.sin(rays[n].arrival_theta) * np.sin(rays[n].arrival_phi)
+            
+            #factor_departure = (1/np.sqrt(num_tx)) 
+            #factor_arrival = (1/np.sqrt(num_rx)) 
+            #factor = (np.sqrt(num_rx * num_tx)) * rays[n].received_power
+            
+            factor_departure = (1/np.sqrt(num_tx)) 
+            factor_arrival = (1/np.sqrt(num_rx)) 
+            factor = (1/np.sqrt(num_rx * num_tx)) * rays[n].received_power
+            
+            #departure
+            departure_vec = np.zeros((1, num_tx)) 
+            for m in range(len(tx_array.ura)):
+                vecx = np.exp(1j * departure_omega_x * np.arange(len(tx_array.ura[m,:])))
+                vecy = np.exp(1j * departure_omega_y * np.arange(len(tx_array.ura[:,m])))
+                departure_vec = factor_departure *np.matrix(np.kron(vecy, vecx)) 
+    
+            #arrival
+            arrival_vec = np.zeros((1, num_rx)) 
+            for m in range(len(rx_array.ura)):
+                vecx = np.exp(1j * arrival_omega_x * np.arange(len(rx_array.ura[m,:])))
+                vecy = np.exp(1j * arrival_omega_y * np.arange(len(rx_array.ura[:,m])))
+                arrival_vec = factor_arrival * np.matrix(np.kron(vecy, vecx))
+          
+            h = h + (factor) * (arrival_vec.conj().T * departure_vec) 
 
-        arrival_omega_x = 2 * np.pi * rx_array.element_spacing * np.sin(rays[n].arrival_theta) * np.cos(rays[n].arrival_phi)
-        arrival_omega_y = 2 * np.pi * rx_array.element_spacing * np.sin(rays[n].arrival_theta) * np.sin(rays[n].arrival_phi)
+    if (tx_array.formfactory=="ULA" and rx_array.formfactory=="ULA"):
+        print("********************ULA")
         
-        #factor_departure = (1/np.sqrt(num_tx)) 
-        #factor_arrival = (1/np.sqrt(num_rx)) 
-        #factor = (np.sqrt(num_rx * num_tx)) * rays[n].received_power
-        
-        factor_departure = (1/np.sqrt(num_tx)) 
-        factor_arrival = (1/np.sqrt(num_rx)) 
-        factor = (1/np.sqrt(num_rx * num_tx)) * rays[n].received_power
-        
-        #departure
-        departure_vec = np.zeros((1, num_tx)) 
-        for m in range(len(tx_array.ura)):
-            vecx = np.exp(1j * departure_omega_x * np.arange(len(tx_array.ura[m,:])))
-            vecy = np.exp(1j * departure_omega_y * np.arange(len(tx_array.ura[:,m])))
-            departure_vec = factor_departure *np.matrix(np.kron(vecy, vecx)) 
+        for n in range(len(rays)):
+            departure_omega = 2 * np.pi * tx_array.element_spacing * np.sin(rays[n].departure_theta) * (1/tx_array.wave_length)
+            arrival_omega = 2 * np.pi * rx_array.element_spacing * np.sin(rays[n].arrival_theta) * (1/rx_array.wave_length)
+            
+            theta_black = []
+            theta = rays[n].departure_theta
+            gain = rays[n].received_power
+            
+            #departure
+            departure_vec = np.arange(num_tx, dtype=float).reshape(1,num_tx) 
+            departure_vec = np.exp(departure_vec * (-1) * (1j) * departure_omega)
+             
+            ##arrival
+            arrival_vec = np.arange(num_rx, dtype=float).reshape(1,num_rx) 
+            arrival_vec = np.exp( arrival_vec * (-1) * (1j) * arrival_vec)
 
-        #arrival
-        arrival_vec = np.zeros((1, num_rx)) 
-        for m in range(len(rx_array.ura)):
-            vecx = np.exp(1j * arrival_omega_x * np.arange(len(rx_array.ura[m,:])))
-            vecy = np.exp(1j * arrival_omega_y * np.arange(len(rx_array.ura[:,m])))
-            arrival_vec = factor_arrival * np.matrix(np.kron(vecy, vecx))
-      
-        h = h + (factor) * (arrival_vec.conj().T * departure_vec) 
-
-    return h
+            prod = np.matmul(arrival_vec.conj().T, departure_vec) 
+          
+            h = h + (gain) * (arrival_vec.conj().T * departure_vec) 
+    return factor * h
 
 def richscatteringchnmtx(num_tx, num_rx):
     """
